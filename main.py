@@ -11,13 +11,14 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 
+
 def main():
     logging.info("Aplicacion iniciada.")
     user_manager = UserManager()
-    project_manager = ProjectManager()
+    project_manager = ProjectManager(user_manager=user_manager)
     context_manager = ContextManager()
     version_control = VersionControl()
-    
+
     while True:
         print("\n--- Menu Principal ---")
         print("1. Crear usuario")
@@ -31,7 +32,8 @@ def main():
         print("9. Listar versiones")
         print("10. Recuperar carpeta desde una version")
         print("11. Recuperar archivo desde una version")
-        print("12. Salir")
+        print("12. Crear rama en el proyecto actual")
+        print("13. Salir")
 
         opcion = input("Seleccione una opcion: ")
         logging.info(f"Opcion seleccionada: {opcion}")
@@ -58,30 +60,52 @@ def main():
             username = input("Nombre de usuario: ")
             project_manager.list_projects(username)
 
+
         elif opcion == "6":
+
             print("\n-- Cambiar Contexto --")
+
             user_manager.list_users()
+
             usuario = input("Selecciona el usuario: ")
 
+            if usuario not in user_manager.load_users():
+                print(f"El usuario '{usuario}' no existe.")
+
+                continue
+
             proyectos = project_manager.list_projects(usuario, silent=True)
+
             if not proyectos:
                 print(f"El usuario '{usuario}' no tiene proyectos.")
+
                 continue
 
             print("Proyectos disponibles:")
+
             for p in proyectos:
                 print(f"- {p}")
+
             proyecto = input("Selecciona el proyecto: ")
 
             ramas = project_manager.list_branches(usuario, proyecto)
+
             if not ramas:
                 print(f"El proyecto '{proyecto}' no tiene ramas.")
+
                 continue
 
             print("Ramas disponibles:")
+
             for r in ramas:
                 print(f"- {r}")
+
             rama = input("Selecciona la rama: ")
+
+            if rama not in ramas:
+                print(f"La rama '{rama}' no existe en el proyecto.")
+
+                continue
 
             context_manager.set_context(usuario, proyecto, rama)
 
@@ -127,8 +151,10 @@ def main():
                 else:
                     print("indice invalido.")
 
-
         elif opcion == "12":
+            project_manager.crear_rama()
+
+        elif opcion == "13":
             logging.info("Aplicacion finalizada por el usuario.")
             break
 
