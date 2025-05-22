@@ -14,8 +14,8 @@ def has_read_permission(current_user, target_user):
         return True  # puede leerse a sí mismo
 
     users = load_users()
-    permisos = users.get(current_user, {}).get("permisos", {})
-    lista = permisos.get(target_user, [])
+    permisos = users.get(target_user, {}).get("permisos", {})
+    lista = permisos.get(current_user, [])
     return "read" in lista
 
 def has_write_permission(current_user, target_user):
@@ -23,6 +23,6 @@ def has_write_permission(current_user, target_user):
         return True  # puede escribirse a sí mismo
 
     users = load_users()
-    permisos = users.get(current_user, {}).get("permisos", {})
-    lista = permisos.get(target_user, [])
+    permisos = users.get(target_user, {}).get("permisos", {})
+    lista = permisos.get(current_user, [])
     return "write" in lista

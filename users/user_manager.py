@@ -65,7 +65,21 @@ class UserManager:
             logging.warning(f"Permiso fallido: {from_user} -> {to_user} (usuarios no encontrados)")
             print("Uno o ambos usuarios no existen.")
             return
-        users[from_user]["permisos"][to_user] = permiso
+        if permiso not in ["read", "write"]:
+            print("Permiso inválido. Solo se permite 'read' o 'write'.")
+            return
+        permisos_actuales = users[from_user]["permisos"].get(to_user, [])
+        if permiso not in permisos_actuales:
+            permisos_actuales.append(permiso)
+        users[from_user]["permisos"][to_user] = permisos_actuales
         self.save_users(users)
+
+        #Crear carpeta shared_{from_user} en el repo del dueño del proyecto
+        if from_user != to_user:
+            shared_path = os.path.join("repo_root", to_user, f"shared_{from_user}")
+            os.makedirs(shared_path, exist_ok=True)
+            print(f"Carpeta compartida creada: {shared_path}")
+
         logging.info(f"Permiso asignado: {from_user} -> {to_user} : {permiso}")
         print(f"Permiso '{permiso}' otorgado de {from_user} a {to_user}.")
+

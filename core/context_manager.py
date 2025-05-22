@@ -42,7 +42,7 @@ class ContextManager:
         if ctx["usuario_actual"] == ctx["usuario_proyecto"]:
             path = os.path.join("repo_root", ctx["usuario_actual"], ctx["proyecto"], "branches", ctx["rama"])
         else:
-            path = os.path.join("repo_root", ctx["usuario_actual"], f"shared_{ctx['usuario_proyecto']}",
+            path = os.path.join("repo_root", ctx["usuario_proyecto"], f"shared_{ctx['usuario_actual']}",
                                 ctx["proyecto"], "branches", ctx["rama"])
         return {
             "usuario_actual": ctx["usuario_actual"],
