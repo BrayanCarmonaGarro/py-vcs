@@ -79,7 +79,7 @@ class UserManager:
 
         #Crear carpeta shared_{from_user} en el repo del dueño del proyecto
         if from_user != to_user:
-            shared_path = os.path.join("repo_root", to_user, f"shared_{from_user}")
+            shared_path = os.path.join("repo_root", from_user, f"shared_{to_user}")
             os.makedirs(shared_path, exist_ok=True)
             print(f"Carpeta compartida creada: {shared_path}")
 
