@@ -1,11 +1,9 @@
-#Contiene la clase UserManager, que se encarga de gestionar los usuarios
-#Contiene la clase UserManager, que se encarga de gestionar los usuarios
-
 import os
 import json
 import logging
+from projects.project_manager import ProjectManager
 
-# Configurar logging
+
 logging.basicConfig(
     filename='logfile.log',
     level=logging.INFO,
@@ -70,19 +68,32 @@ class UserManager:
         if permiso not in ["read", "write"]:
             print("Permiso inválido. Solo se permite 'read' o 'write'.")
             return
+
         permisos_actuales = users[from_user]["permisos"].get(to_user, [])
-        
         if permiso not in permisos_actuales:
             permisos_actuales.append(permiso)
         users[from_user]["permisos"][to_user] = permisos_actuales
         self.save_users(users)
 
-        #Crear carpeta shared_{from_user} en el repo del dueño del proyecto
         if from_user != to_user:
-            shared_path = os.path.join("repo_root", from_user, f"shared_{to_user}")
-            os.makedirs(shared_path, exist_ok=True)
-            print(f"Carpeta compartida creada: {shared_path}")
+            from projects.project_manager import ProjectManager
+            pm = ProjectManager(self)
 
-        logging.info(f"Permiso asignado: {from_user} -> {to_user} : {permiso}")
+            proyectos = pm.list_projects(from_user, silent=True)
+            for proyecto in proyectos:
+
+                origen_branches = os.path.join(REPO_ROOT, from_user, proyecto, "branches")
+
+                if not os.path.exists(origen_branches):
+                    continue
+
+                destino_base = os.path.join(REPO_ROOT, from_user, f"shared_{to_user}", proyecto, "branches")
+
+                for rama in os.listdir(origen_branches):
+                    path_rama = os.path.join(destino_base, rama, "temporal")
+                    os.makedirs(path_rama, exist_ok=True)
+
+            print(f"Estructura del proyecto compartida para {to_user}.")
+            logging.info(f"Estructura replicada para acceso compartido: {from_user} → shared_{to_user}.")
+
         print(f"Permiso '{permiso}' otorgado de {from_user} a {to_user}.")
-

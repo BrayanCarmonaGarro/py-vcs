@@ -53,7 +53,7 @@ class ContextManager:
         }
 
     def get_user(self):
-        return self.load_context().get("usuario")
+        return self.load_context().get("usuario_actual")
 
     def get_project(self):
         return self.load_context().get("proyecto")
