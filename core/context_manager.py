@@ -23,19 +23,34 @@ class ContextManager:
         with open(CONTEXT_FILE, "w") as f:
             json.dump(context, f, indent=2)
 
-    def set_context(self, username, project, branch):
+    def set_context(self, usuario_actual, usuario_proyecto, proyecto, rama):
         context = {
-            "usuario": username,
-            "proyecto": project,
-            "rama": branch
+            "usuario_actual": usuario_actual,
+            "usuario_proyecto": usuario_proyecto,
+            "proyecto": proyecto,
+            "rama": rama
         }
         self.save_context(context)
-        print(f"Contexto actualizado: Usuario: {username}, Proyecto: {project}, Rama: {branch}")
+        print(
+            f"Contexto actualizado: Usuario actual: {usuario_actual}, Proyecto de: {usuario_proyecto}, Proyecto: {proyecto}, Rama: {rama}")
         logging.info(f"Contexto cambiado a: {context}")
 
     def get_context(self):
         ctx = self.load_context()
-        return ctx.get("usuario"), ctx.get("proyecto"), ctx.get("rama")
+        if not all(k in ctx for k in ("usuario_actual", "usuario_proyecto", "proyecto", "rama")):
+            return None
+        if ctx["usuario_actual"] == ctx["usuario_proyecto"]:
+            path = os.path.join("repo_root", ctx["usuario_actual"], ctx["proyecto"], "branches", ctx["rama"])
+        else:
+            path = os.path.join("repo_root", ctx["usuario_proyecto"], f"shared_{ctx['usuario_actual']}",
+                                ctx["proyecto"], "branches", ctx["rama"])
+        return {
+            "usuario_actual": ctx["usuario_actual"],
+            "usuario_proyecto": ctx["usuario_proyecto"],
+            "proyecto": ctx["proyecto"],
+            "rama": ctx["rama"],
+            "path": path
+        }
 
     def get_user(self):
         return self.load_context().get("usuario")
