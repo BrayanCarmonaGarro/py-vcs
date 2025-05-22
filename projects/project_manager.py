@@ -63,34 +63,34 @@ class ProjectManager:
         return [name for name in os.listdir(branches_dir) if os.path.isdir(os.path.join(branches_dir, name))]
 
     def crear_rama(self):
-        ctx = ContextManager()
-        user_ctx = ctx.get_user()
-        project = ctx.get_project()
+        ctx_manager = ContextManager()
+        ctx = ctx_manager.get_context()
 
-        if not user_ctx or not project:
-            print("Debe seleccionar primero un contexto válido (usuario y proyecto).")
+        if not ctx:
+            print("Debe seleccionar primero un contexto válido (usuario actual y proyecto).")
+            return
+
+        usuario_actual = ctx["usuario_actual"]
+        usuario_proyecto = ctx["usuario_proyecto"]
+        proyecto = ctx["proyecto"]
+
+        if not usuario_actual or not usuario_proyecto or not proyecto:
+            print("Contexto incompleto.")
             return
 
         projects = self.load_projects()
-        if user_ctx not in projects or project not in projects[user_ctx]:
-            print(f"El proyecto '{project}' no existe para el usuario '{user_ctx}'.")
+        if usuario_proyecto not in projects or proyecto not in projects[usuario_proyecto]:
+            print(f"El proyecto '{proyecto}' no existe para el usuario '{usuario_proyecto}'.")
             return
 
-        solicitante = input("Ingrese el nombre del usuario que realiza esta acción: ").strip()
-        if not solicitante:
-            print("Debe ingresar un nombre de usuario válido.")
-            return
-
-        users = self.user_manager.load_users()
-        if solicitante not in users:
-            print(f"El usuario '{solicitante}' no existe.")
-            return
-
-        if solicitante != user_ctx:
-            permisos = users[user_ctx].get("permisos", {})
-            permiso_otorgado = permisos.get(solicitante)
-            if permiso_otorgado != "write":
-                print(f"El usuario '{solicitante}' no tiene permisos de escritura en el proyecto '{project}' de '{user_ctx}'.")
+        # Validación de permisos
+        if usuario_actual != usuario_proyecto:
+            users = self.user_manager.load_users()
+            permisos = users[usuario_proyecto].get("permisos", {})
+            permisos_lista = permisos.get(usuario_actual, [])
+            if "write" not in permisos_lista:
+                print(
+                    f"El usuario '{usuario_actual}' no tiene permisos de escritura en el proyecto '{proyecto}' de '{usuario_proyecto}'.")
                 return
 
         branch_name = input("Ingrese el nombre de la nueva rama: ").strip()
@@ -105,7 +105,13 @@ class ProjectManager:
             print("El nombre de la rama solo puede contener letras, números, guiones y guiones bajos.")
             return
 
-        branch_path = os.path.join(REPO_ROOT, user_ctx, project, "branches", branch_name)
+        # Ruta según contexto
+        if usuario_actual == usuario_proyecto:
+            branch_path = os.path.join(REPO_ROOT, usuario_actual, proyecto, "branches", branch_name)
+        else:
+            branch_path = os.path.join(REPO_ROOT, usuario_proyecto, f"shared_{usuario_actual}", proyecto, "branches",
+                                       branch_name)
+
         if os.path.exists(branch_path):
             print(f"La rama '{branch_name}' ya existe.")
             return
@@ -113,4 +119,5 @@ class ProjectManager:
         os.makedirs(os.path.join(branch_path, "temporal"), exist_ok=True)
         os.makedirs(os.path.join(branch_path, "permanente"), exist_ok=True)
 
-        print(f"Rama '{branch_name}' creada exitosamente en el proyecto '{project}' para el usuario '{user_ctx}'.")
+        print(
+            f"Rama '{branch_name}' creada exitosamente en el proyecto '{proyecto}' de '{usuario_proyecto}' por '{usuario_actual}'.")
