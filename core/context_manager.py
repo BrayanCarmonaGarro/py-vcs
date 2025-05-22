@@ -35,7 +35,15 @@ class ContextManager:
 
     def get_context(self):
         ctx = self.load_context()
-        return ctx.get("usuario"), ctx.get("proyecto"), ctx.get("rama")
+        if not all(k in ctx for k in ("usuario", "proyecto", "rama")):
+            return None
+        path = os.path.join("repo_root", ctx["usuario"], ctx["proyecto"], "branches", ctx["rama"])
+        return {
+            "usuario": ctx["usuario"],
+            "proyecto": ctx["proyecto"],
+            "rama": ctx["rama"],
+            "path": path
+        }
 
     def get_user(self):
         return self.load_context().get("usuario")

@@ -3,6 +3,7 @@ from users.user_manager import UserManager
 from projects.project_manager import ProjectManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
+from utils import file_ops
 
 # Configuracion de logging para guardar logs en un archivo y poder ver el flujo de la aplicacion y errores
 logging.basicConfig(
@@ -32,6 +33,10 @@ def main():
         print("10. Recuperar carpeta desde una version")
         print("11. Recuperar archivo desde una version")
         print("12. Salir")
+        print("13. Crear archivo")
+        print("14. Ver archivo")
+        print("15. Editar archivo")
+        print("16. Eliminar archivo")
 
         opcion = input("Seleccione una opcion: ")
         logging.info(f"Opcion seleccionada: {opcion}")
@@ -131,6 +136,44 @@ def main():
         elif opcion == "12":
             logging.info("Aplicacion finalizada por el usuario.")
             break
+
+        elif opcion == "13":
+            ctx = context_manager.get_context()
+            if not ctx:
+                print("No hay contexto seleccionado.")
+                continue
+            filename = input("Nombre del archivo: ")
+            content = input("Contenido inicial: ")
+            file_ops.create_file(ctx["path"], filename, content)
+
+        elif opcion == "14":
+            ctx = context_manager.get_context()
+            if not ctx:
+                print("No hay contexto seleccionado.")
+                continue
+            filename = input("Archivo a leer: ")
+            content = file_ops.read_file(ctx["path"], filename)
+            if content:
+                print("\n--- Contenido ---")
+                print(content)
+
+        elif opcion == "15":
+            ctx = context_manager.get_context()
+            if not ctx:
+                print("No hay contexto seleccionado.")
+                continue
+            filename = input("Archivo a editar: ")
+            content = input("Nuevo contenido: ")
+            file_ops.update_file(ctx["path"], filename, content)
+
+        elif opcion == "16":
+            ctx = context_manager.get_context()
+            if not ctx:
+                print("No hay contexto seleccionado.")
+                continue
+            filename = input("Archivo a eliminar: ")
+            file_ops.delete_file(ctx["path"], filename)
+
 
         else:
             print("Opcion invalida.")
