@@ -15,13 +15,14 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 
+
 def main():
     logging.info("Aplicacion iniciada.")
     user_manager = UserManager()
-    project_manager = ProjectManager()
+    project_manager = ProjectManager(user_manager=user_manager)
     context_manager = ContextManager()
     version_control = VersionControl()
-    
+
     while True:
         print("\n--- Menu Principal ---")
         print("1. Crear usuario")
@@ -35,11 +36,13 @@ def main():
         print("9. Listar versiones")
         print("10. Recuperar carpeta desde una version")
         print("11. Recuperar archivo desde una version")
-        print("12. Crear archivo")
-        print("13. Ver archivo")
-        print("14. Editar archivo")
-        print("15. Eliminar archivo")
-        print("16. Salir")
+        print("12. Crear rama en el proyecto actual")
+        print("13. Crear archivo")
+        print("14. Ver archivo")
+        print("15. Editar archivo")
+        print("16. Eliminar archivo")
+        print("17. Salir")
+
 
         opcion = input("Seleccione una opcion: ")
         logging.info(f"Opcion seleccionada: {opcion}")
@@ -66,28 +69,42 @@ def main():
             username = input("Nombre de usuario: ")
             project_manager.list_projects(username)
 
+
         elif opcion == "6":
+
             print("\n-- Cambiar Contexto --")
+
             user_manager.list_users()
+
             usuario_actual = input("¿Quién eres tú (usuario actual)? ")
             usuario_proyecto = input("¿De quién es el proyecto que querés usar? ")
             proyectos = project_manager.list_projects(usuario_proyecto, silent=True)
+            
             if not proyectos:
                 print(f"El usuario '{usuario_proyecto}' no tiene proyectos.")
                 continue
             print("Proyectos disponibles:")
+            
             for p in proyectos:
                 print(f"- {p}")
+                
             proyecto = input("Selecciona el proyecto: ")
             ramas = project_manager.list_branches(usuario_proyecto, proyecto)
+
             if not ramas:
                 print(f"El proyecto '{proyecto}' no tiene ramas.")
                 continue
             print("Ramas disponibles:")
+
             for r in ramas:
                 print(f"- {r}")
+
             rama = input("Selecciona la rama: ")
+            if rama not in ramas:
+                print(f"La rama '{rama}' no existe en el proyecto.")
+                continue
             context_manager.set_context(usuario_actual, usuario_proyecto, proyecto, rama)
+
 
         elif opcion == "7":
             version_control.commit()
@@ -132,12 +149,17 @@ def main():
                     print("indice invalido.")
 
         elif opcion == "12":
+            project_manager.crear_rama()
+            
+        elif opcion == "13":
             ctx = context_manager.get_context()
+            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
+            
             if not permissions.has_write_permission(current_user, target_user):
                 print(f"No tienes permiso de escritura sobre el proyecto de {target_user}.")
                 continue
@@ -145,30 +167,35 @@ def main():
             content = input("Contenido inicial: ")
             file_ops.create_file(ctx["path"], filename, content)
 
-        elif opcion == "13":
+        elif opcion == "14":
             ctx = context_manager.get_context()
+            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
+            
             if not permissions.has_read_permission(current_user, target_user):
                 print(f"No tienes permiso de lectura sobre el proyecto de {target_user}.")
                 continue
             filename = input("Archivo a leer: ")
             content = file_ops.read_file(ctx["path"], filename)
+            
             if content:
                 print("\n--- Contenido ---")
                 print(content)
 
 
-        elif opcion == "14":
+        elif opcion == "15":
             ctx = context_manager.get_context()
+            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
+            
             if not permissions.has_write_permission(current_user, target_user):
                 print(f"No tienes permiso de escritura sobre el proyecto de {target_user}.")
                 continue
@@ -176,20 +203,22 @@ def main():
             content = input("Nuevo contenido: ")
             file_ops.update_file(ctx["path"], filename, content)
 
-        elif opcion == "15":
+        elif opcion == "16":
             ctx = context_manager.get_context()
+            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
+            
             if not permissions.has_write_permission(current_user, target_user):
                 print(f"No tienes permiso de escritura para eliminar archivos en el proyecto de {target_user}.")
                 continue
             filename = input("Archivo a eliminar: ")
             file_ops.delete_file(ctx["path"], filename)
 
-        elif opcion == "16":
+        elif opcion == "17":
             logging.info("Aplicacion finalizada por el usuario.")
             break
 

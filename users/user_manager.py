@@ -61,14 +61,17 @@ class UserManager:
 
     def assign_permission(self, from_user, to_user, permiso):
         users = self.load_users()
+
         if from_user not in users or to_user not in users:
             logging.warning(f"Permiso fallido: {from_user} -> {to_user} (usuarios no encontrados)")
             print("Uno o ambos usuarios no existen.")
             return
+
         if permiso not in ["read", "write"]:
             print("Permiso inválido. Solo se permite 'read' o 'write'.")
             return
         permisos_actuales = users[from_user]["permisos"].get(to_user, [])
+        
         if permiso not in permisos_actuales:
             permisos_actuales.append(permiso)
         users[from_user]["permisos"][to_user] = permisos_actuales
