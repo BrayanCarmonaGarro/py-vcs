@@ -71,3 +71,23 @@ class UserManager:
         os.makedirs(temp_folder, exist_ok=True)
 
         print(f"Permiso '{permiso}' otorgado de {from_user} a {to_user}.")
+
+    def has_write_permission(self, current_user, target_user):
+        users = self.load_users()
+        if current_user == target_user:
+            return True
+        return users.get(target_user, {}).get("permisos", {}).get(current_user) == "write"
+
+    def has_read_permission(self, current_user, target_user):
+        users = self.load_users()
+        if current_user == target_user:
+            return True
+        return users.get(target_user, {}).get("permisos", {}).get(current_user) in ("read", "write")
+
+
+    def has_any_permission(self, current_user, target_user):
+        users = self.load_users()
+        if current_user == target_user:
+            return True
+        return current_user in users.get(target_user, {}).get("permisos", {})
+

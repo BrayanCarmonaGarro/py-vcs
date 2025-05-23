@@ -60,14 +60,13 @@ def main():
                 print("Uno de los usuarios no existe.")
                 continue
 
-            if usuario_actual == usuario_destino:
-                path = os.path.join("repo_root", usuario_actual, "temporal")
-            else:
-                permisos = user_manager.load_users().get(usuario_destino, {}).get("permisos", {})
-                if usuario_actual not in permisos:
-                    print(f"No tienes permisos para acceder al repositorio de {usuario_destino}.")
-                    continue
-                path = os.path.join("repo_root", usuario_destino, f"temp_{usuario_actual}")
+            if usuario_actual not in user_manager.load_users() or usuario_destino not in user_manager.load_users():
+                print("Uno de los usuarios no existe.")
+                continue
+
+            if usuario_actual != usuario_destino and not user_manager.has_any_permission(usuario_actual, usuario_destino):
+                print(f"No tienes permisos para acceder al repositorio de {usuario_destino}.")
+                continue
 
             context_manager.set_context(usuario_actual, usuario_destino)
 
@@ -118,12 +117,11 @@ def main():
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_destino"]
-            if not permissions.has_write_permission(current_user, target_user):
+            if not user_manager.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura.")
                 continue
             filename = input("Nombre del archivo: ")
-            content = input("Contenido inicial: ")
-            file_ops.create_file(ctx["path"], filename, content)
+            file_ops.create_file(ctx["path"], filename)
 
         elif opcion == "11":
             ctx = context_manager.get_context()
@@ -132,7 +130,7 @@ def main():
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_destino"]
-            if not permissions.has_read_permission(current_user, target_user):
+            if not user_manager.has_read_permission(current_user, target_user):
                 print("No tienes permiso de lectura.")
                 continue
             filename = input("Archivo a leer: ")
@@ -148,7 +146,7 @@ def main():
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_destino"]
-            if not permissions.has_write_permission(current_user, target_user):
+            if not user_manager.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura.")
                 continue
             filename = input("Archivo a editar: ")
@@ -162,7 +160,7 @@ def main():
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_destino"]
-            if not permissions.has_write_permission(current_user, target_user):
+            if not user_manager.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura para eliminar archivos.")
                 continue
             filename = input("Archivo a eliminar: ")
