@@ -19,7 +19,18 @@ class VersionControl:
 
         usuario_actual = ctx["usuario_actual"]
         usuario_destino = ctx["usuario_destino"]
-        temp_path = ctx["path"]  
+        temp_path = ctx["path"]
+
+        users = self.um.load_users()
+        if usuario_destino not in users:
+            print(f"El usuario destino '{usuario_destino}' no existe.")
+            return
+
+        permisos = users[usuario_destino].get("permisos", {})
+        permiso = permisos.get(usuario_actual)
+        if usuario_actual != usuario_destino and permiso != "write":
+            print(f"No tienes permisos de escritura sobre el usuario '{usuario_destino}'.")
+            return
 
         perm_path = os.path.join(self.base_repo, usuario_destino, "permanente")
         version_path = os.path.join(self.base_repo, usuario_destino, "versiones")
@@ -31,17 +42,16 @@ class VersionControl:
         os.makedirs(perm_path, exist_ok=True)
         os.makedirs(version_path, exist_ok=True)
 
-        # Reemplazar contenido de permanente con temporal
         if os.path.exists(perm_path):
             shutil.rmtree(perm_path)
         shutil.copytree(temp_path, perm_path)
 
-        # Crear nueva versión con timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         version_dir = os.path.join(version_path, f"v_{timestamp}")
         shutil.copytree(perm_path, version_dir)
 
         print(f"Commit realizado sobre {usuario_destino}. Versión guardada: v_{timestamp}")
+
 
     def update(self):
         ctx = self.ctx.get_context()
