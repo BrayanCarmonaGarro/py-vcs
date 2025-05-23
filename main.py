@@ -3,7 +3,6 @@ from users.user_manager import UserManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
 from utils import file_ops
-from users import permissions
 import os
 
 # Configuración de logging
@@ -30,10 +29,11 @@ def main():
         print("8. Recuperar versión completa")
         print("9. Recuperar archivo específico")
         print("10. Crear archivo")
-        print("11. Ver archivo")
-        print("12. Editar archivo")
-        print("13. Eliminar archivo")
-        print("14. Salir")
+        print("11. Listar archivos")
+        print("12. Ver archivo")
+        print("13. Editar archivo")
+        print("14. Eliminar archivo")
+        print("15. Salir")
 
         opcion = input("Seleccione una opción: ").strip()
         logging.info(f"Opción seleccionada: {opcion}")
@@ -133,13 +133,25 @@ def main():
             if not user_manager.has_read_permission(current_user, target_user):
                 print("No tienes permiso de lectura.")
                 continue
+            file_ops.list_files(ctx["path"])
+
+        elif opcion == "12":
+            ctx = context_manager.get_context()
+            if not ctx:
+                print("No hay contexto seleccionado.")
+                continue
+            current_user = ctx["usuario_actual"]
+            target_user = ctx["usuario_destino"]
+            if not user_manager.has_read_permission(current_user, target_user):
+                print("No tienes permiso de lectura.")
+                continue
             filename = input("Archivo a leer: ")
             content = file_ops.read_file(ctx["path"], filename)
             if content:
                 print("\n--- Contenido del archivo ---\n")
                 print(content)
 
-        elif opcion == "12":
+        elif opcion == "13":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -153,7 +165,7 @@ def main():
             content = input("Nuevo contenido: ")
             file_ops.update_file(ctx["path"], filename, content)
 
-        elif opcion == "13":
+        elif opcion == "14":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -166,7 +178,7 @@ def main():
             filename = input("Archivo a eliminar: ")
             file_ops.delete_file(ctx["path"], filename)
 
-        elif opcion == "14":
+        elif opcion == "15":
             logging.info("Aplicación finalizada.")
             break
 
