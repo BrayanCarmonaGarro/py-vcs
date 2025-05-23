@@ -3,7 +3,6 @@ from users.user_manager import UserManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
 from utils import file_ops
-from users import permissions
 import os
 
 # Configuración de logging
@@ -54,26 +53,22 @@ def main():
         elif opcion == "4":
             user_manager.list_users()
             usuario_actual = input("¿Quién eres tú (usuario actual)? ").strip()
-            usuario_proyecto = input("¿A qué usuario deseas acceder (dueño de carpeta)?: ").strip()
+            usuario_destino = input("¿A qué usuario deseas acceder (dueño de carpeta)?: ").strip()
 
-            if usuario_actual not in user_manager.load_users() or usuario_proyecto not in user_manager.load_users():
+            if usuario_actual not in user_manager.load_users() or usuario_destino not in user_manager.load_users():
                 print("Uno de los usuarios no existe.")
                 continue
 
-            if usuario_actual == usuario_proyecto:
+            if usuario_actual == usuario_destino:
                 path = os.path.join("repo_root", usuario_actual, "temporal")
             else:
-                permisos = user_manager.load_users().get(usuario_proyecto, {}).get("permisos", {})
+                permisos = user_manager.load_users().get(usuario_destino, {}).get("permisos", {})
                 if usuario_actual not in permisos:
-                    print(f"No tienes permisos para acceder al repositorio de {usuario_proyecto}.")
+                    print(f"No tienes permisos para acceder al repositorio de {usuario_destino}.")
                     continue
-                path = os.path.join("repo_root", usuario_proyecto, f"temp_{usuario_actual}")
+                path = os.path.join("repo_root", usuario_destino, f"temp_{usuario_actual}")
 
-            context_manager.set_context({
-                "usuario_actual": usuario_actual,
-                "usuario_proyecto": usuario_proyecto,
-                "path": path
-            })
+            context_manager.set_context(usuario_actual, usuario_destino)
 
         elif opcion == "5":
             version_control.commit()
@@ -121,7 +116,7 @@ def main():
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
-            target_user = ctx["usuario_proyecto"]
+            target_user = ctx["usuario_destino"]
             if not permissions.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura.")
                 continue
@@ -135,7 +130,7 @@ def main():
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
-            target_user = ctx["usuario_proyecto"]
+            target_user = ctx["usuario_destino"]
             if not permissions.has_read_permission(current_user, target_user):
                 print("No tienes permiso de lectura.")
                 continue
@@ -151,7 +146,7 @@ def main():
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
-            target_user = ctx["usuario_proyecto"]
+            target_user = ctx["usuario_destino"]
             if not permissions.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura.")
                 continue
@@ -165,7 +160,7 @@ def main():
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
-            target_user = ctx["usuario_proyecto"]
+            target_user = ctx["usuario_destino"]
             if not permissions.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura para eliminar archivos.")
                 continue
