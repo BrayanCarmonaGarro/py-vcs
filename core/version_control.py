@@ -12,33 +12,37 @@ class VersionControl:
         self.base_repo = "repo_root"
 
     def commit(self):
-        user = self.ctx.get_user()
-        if not user:
+        ctx = self.ctx.get_context()
+        if not ctx:
             print("No hay contexto activo.")
             return
 
-        perm_path = os.path.join(self.base_repo, user, "permanente")
-        temp_path = os.path.join(self.base_repo, user, "temporal")
-        version_path = os.path.join(self.base_repo, user, "versiones")
+        usuario_actual = ctx["usuario_actual"]
+        usuario_destino = ctx["usuario_destino"]
+        temp_path = ctx["path"]  # Esta es la carpeta temporal actual del contexto
+
+        # El commit se realiza solo sobre el dueño real del repositorio (usuario_destino)
+        perm_path = os.path.join(self.base_repo, usuario_destino, "permanente")
+        version_path = os.path.join(self.base_repo, usuario_destino, "versiones")
 
         if not os.path.exists(temp_path):
-            print(f"No se encontró la carpeta temporal.")
+            print(f"No se encontró la carpeta temporal de trabajo: {temp_path}")
             return
 
         os.makedirs(perm_path, exist_ok=True)
         os.makedirs(version_path, exist_ok=True)
 
-        # borrar permanente actual
+        # Reemplazar contenido de permanente con temporal
         if os.path.exists(perm_path):
             shutil.rmtree(perm_path)
         shutil.copytree(temp_path, perm_path)
 
-        # guardar versión
+        # Crear nueva versión con timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         version_dir = os.path.join(version_path, f"v_{timestamp}")
         shutil.copytree(perm_path, version_dir)
 
-        print(f"Commit realizado. Versión guardada: v_{timestamp}")
+        print(f"Commit realizado sobre {usuario_destino}. Versión guardada: v_{timestamp}")
 
     def update(self, target_user):
         current_user = self.ctx.get_user()
