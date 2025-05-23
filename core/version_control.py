@@ -40,13 +40,20 @@ class VersionControl:
 
         print(f"Commit realizado. Versión guardada: v_{timestamp}")
 
-    def update(self, target_user):
-        current_user = self.ctx.get_user()
-        if not current_user or not target_user:
-            print("Falta contexto o usuario destino.")
+    def update(self):
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
             return
 
-        # verificar permisos
+        current_user = ctx["usuario_actual"]
+        target_user = ctx["usuario_destino"]
+
+        if not current_user or not target_user:
+            print("Falta información del contexto.")
+            return
+
+        # Verificar permisos
         users = self.um.load_users()
         if target_user not in users:
             print(f"El usuario destino '{target_user}' no existe.")
@@ -59,7 +66,11 @@ class VersionControl:
             return
 
         perm_path = os.path.join(self.base_repo, target_user, "permanente")
-        temp_dest = os.path.join(self.base_repo, target_user, f"temp_{current_user}" if current_user != target_user else "temporal")
+        temp_dest = os.path.join(
+            self.base_repo,
+            target_user,
+            f"temp_{current_user}" if current_user != target_user else "temporal"
+        )
 
         if not os.path.exists(perm_path):
             print("No hay carpeta permanente para copiar.")
@@ -69,7 +80,7 @@ class VersionControl:
             shutil.rmtree(temp_dest)
         shutil.copytree(perm_path, temp_dest)
 
-        print(f"Update realizado desde '{target_user}' hacia '{temp_dest}'.")
+        print(f"Update realizado desde '{perm_path}' hacia '{temp_dest}'.")
 
     def list_versions(self):
         user = self.ctx.get_user()

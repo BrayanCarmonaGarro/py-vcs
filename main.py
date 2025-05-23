@@ -3,7 +3,6 @@ from users.user_manager import UserManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
 from utils import file_ops
-from users import permissions
 import os
 
 # Configuración de logging
@@ -74,8 +73,7 @@ def main():
             version_control.commit()
 
         elif opcion == "6":
-            target_user = input("¿Desde qué usuario deseas hacer update?: ").strip()
-            version_control.update(target_user)
+            version_control.update()
 
         elif opcion == "7":
             version_control.list_versions()
