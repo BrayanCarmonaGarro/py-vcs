@@ -40,7 +40,6 @@ class ContextManager:
         }
 
         self.save_context(context)
-        print(f"Contexto actualizado: {usuario_actual} accede a la carpeta de {usuario_destino}.")
         logging.info(f"Contexto cambiado a: {context}")
 
     def get_context(self):
