@@ -1,14 +1,6 @@
 import os
 import json
 import logging
-from projects.project_manager import ProjectManager
-
-
-logging.basicConfig(
-    filename='logfile.log',
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
 
 DATA_FILE = "data/users.json"
 REPO_ROOT = "repo_root"
@@ -38,62 +30,44 @@ class UserManager:
     def create_user(self, username):
         users = self.load_users()
         if username in users:
-            logging.warning(f"Intento de crear usuario existente: {username}")
             print(f"El usuario '{username}' ya existe.")
             return
+
         users[username] = {
-            "permisos": {},
+            "permisos": {}
         }
-        user_path = os.path.join(REPO_ROOT, username)
-        os.makedirs(user_path, exist_ok=True)
+
+        base_path = os.path.join(REPO_ROOT, username)
+        os.makedirs(os.path.join(base_path, "permanente"), exist_ok=True)
+        os.makedirs(os.path.join(base_path, "temporal"), exist_ok=True)
+        os.makedirs(os.path.join(base_path, "versiones"), exist_ok=True)
+
         self.save_users(users)
-        logging.info(f"Usuario creado: {username}")
-        print(f"Usuario '{username}' creado con exito.")
+        print(f"Usuario '{username}' creado con éxito.")
 
     def list_users(self):
         users = self.load_users()
         print("Usuarios registrados:")
         for u in users:
             print(f"- {u}")
-        logging.info("Listado de usuarios mostrado.")
 
     def assign_permission(self, from_user, to_user, permiso):
         users = self.load_users()
-
         if from_user not in users or to_user not in users:
-            logging.warning(f"Permiso fallido: {from_user} -> {to_user} (usuarios no encontrados)")
             print("Uno o ambos usuarios no existen.")
             return
-
+        if from_user == to_user:
+            print("No puedes asignarte permisos a ti mismo.")
+            return
         if permiso not in ["read", "write"]:
-            print("Permiso inválido. Solo se permite 'read' o 'write'.")
+            print("Permiso inválido. Use 'read' o 'write'.")
             return
 
-        permisos_actuales = users[from_user]["permisos"].get(to_user, [])
-        if permiso not in permisos_actuales:
-            permisos_actuales.append(permiso)
-        users[from_user]["permisos"][to_user] = permisos_actuales
+        users[from_user]["permisos"][to_user] = permiso
         self.save_users(users)
 
-        if from_user != to_user:
-            from projects.project_manager import ProjectManager
-            pm = ProjectManager(self)
-
-            proyectos = pm.list_projects(from_user, silent=True)
-            for proyecto in proyectos:
-
-                origen_branches = os.path.join(REPO_ROOT, from_user, proyecto, "branches")
-
-                if not os.path.exists(origen_branches):
-                    continue
-
-                destino_base = os.path.join(REPO_ROOT, from_user, f"shared_{to_user}", proyecto, "branches")
-
-                for rama in os.listdir(origen_branches):
-                    path_rama = os.path.join(destino_base, rama, "temporal")
-                    os.makedirs(path_rama, exist_ok=True)
-
-            print(f"Estructura del proyecto compartida para {to_user}.")
-            logging.info(f"Estructura replicada para acceso compartido: {from_user} → shared_{to_user}.")
+        # Crear carpeta temporal compartida
+        temp_folder = os.path.join(REPO_ROOT, from_user, f"temp_{to_user}")
+        os.makedirs(temp_folder, exist_ok=True)
 
         print(f"Permiso '{permiso}' otorgado de {from_user} a {to_user}.")

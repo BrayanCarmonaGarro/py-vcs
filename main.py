@@ -1,230 +1,183 @@
 import logging
 from users.user_manager import UserManager
-from projects.project_manager import ProjectManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
 from utils import file_ops
 from users import permissions
 import os
 
-
-# Configuracion de logging para guardar logs en un archivo y poder ver el flujo de la aplicacion y errores
+# Configuración de logging
 logging.basicConfig(
     filename='logfile.log',
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 
-
 def main():
-    logging.info("Aplicacion iniciada.")
     user_manager = UserManager()
-    project_manager = ProjectManager(user_manager=user_manager)
     context_manager = ContextManager()
     version_control = VersionControl()
 
     while True:
-        print("\n--- Menu Principal ---")
+        print("\n--- Menú Principal ---")
         print("1. Crear usuario")
         print("2. Listar usuarios")
         print("3. Asignar permisos")
-        print("4. Crear proyecto")
-        print("5. Listar proyectos")
-        print("6. Cambiar contexto")
-        print("7. Commit")
-        print("8. Update")
-        print("9. Listar versiones")
-        print("10. Recuperar carpeta desde una version")
-        print("11. Recuperar archivo desde una version")
-        print("12. Crear rama en el proyecto actual")
-        print("13. Crear archivo")
-        print("14. Ver archivo")
-        print("15. Editar archivo")
-        print("16. Eliminar archivo")
-        print("17. Salir")
+        print("4. Cambiar de usuario (contexto)")
+        print("5. Commit")
+        print("6. Update desde otro usuario")
+        print("7. Listar versiones")
+        print("8. Recuperar versión completa")
+        print("9. Recuperar archivo específico")
+        print("10. Crear archivo")
+        print("11. Ver archivo")
+        print("12. Editar archivo")
+        print("13. Eliminar archivo")
+        print("14. Salir")
 
-
-        opcion = input("Seleccione una opcion: ")
-        logging.info(f"Opcion seleccionada: {opcion}")
+        opcion = input("Seleccione una opción: ").strip()
+        logging.info(f"Opción seleccionada: {opcion}")
 
         if opcion == "1":
-            username = input("Nombre de usuario: ")
+            username = input("Ingrese nombre del nuevo usuario: ").strip()
             user_manager.create_user(username)
 
         elif opcion == "2":
             user_manager.list_users()
 
         elif opcion == "3":
-            user_from = input("Usuario que otorga permisos: ")
-            user_to = input("Usuario que recibe permisos: ")
-            perm = input("Permiso (read/write): ")
-            user_manager.assign_permission(user_from, user_to, perm)
+            from_user = input("Usuario que otorga permiso: ").strip()
+            to_user = input("Usuario que recibirá permiso: ").strip()
+            permiso = input("Permiso a otorgar (read/write): ").strip().lower()
+            user_manager.assign_permission(from_user, to_user, permiso)
 
         elif opcion == "4":
-            username = input("Nombre de usuario: ")
-            project_name = input("Nombre del proyecto: ")
-            project_manager.create_project(username, project_name)
+            user_manager.list_users()
+            usuario_actual = input("¿Quién eres tú (usuario actual)? ").strip()
+            usuario_proyecto = input("¿A qué usuario deseas acceder (dueño de carpeta)?: ").strip()
+
+            if usuario_actual not in user_manager.load_users() or usuario_proyecto not in user_manager.load_users():
+                print("Uno de los usuarios no existe.")
+                continue
+
+            if usuario_actual == usuario_proyecto:
+                path = os.path.join("repo_root", usuario_actual, "temporal")
+            else:
+                permisos = user_manager.load_users().get(usuario_proyecto, {}).get("permisos", {})
+                if usuario_actual not in permisos:
+                    print(f"No tienes permisos para acceder al repositorio de {usuario_proyecto}.")
+                    continue
+                path = os.path.join("repo_root", usuario_proyecto, f"temp_{usuario_actual}")
+
+            context_manager.set_context({
+                "usuario_actual": usuario_actual,
+                "usuario_proyecto": usuario_proyecto,
+                "path": path
+            })
 
         elif opcion == "5":
-            username = input("Nombre de usuario: ")
-            project_manager.list_projects(username)
-
-
-        elif opcion == "6":
-
-            print("\n-- Cambiar Contexto --")
-
-            user_manager.list_users()
-
-            usuario_actual = input("¿Quién eres tú (usuario actual)? ")
-            usuario_proyecto = input("¿De quién es el proyecto que querés usar? ")
-            proyectos = project_manager.list_projects(usuario_proyecto, silent=True)
-            
-            if not proyectos:
-                print(f"El usuario '{usuario_proyecto}' no tiene proyectos.")
-                continue
-            print("Proyectos disponibles:")
-            
-            for p in proyectos:
-                print(f"- {p}")
-                
-            proyecto = input("Selecciona el proyecto: ")
-            ramas = project_manager.list_branches(usuario_proyecto, proyecto)
-
-            if not ramas:
-                print(f"El proyecto '{proyecto}' no tiene ramas.")
-                continue
-            print("Ramas disponibles:")
-
-            for r in ramas:
-                print(f"- {r}")
-
-            rama = input("Selecciona la rama: ")
-            if rama not in ramas:
-                print(f"La rama '{rama}' no existe en el proyecto.")
-                continue
-            context_manager.set_context(usuario_actual, usuario_proyecto, proyecto, rama)
-
-
-        elif opcion == "7":
             version_control.commit()
 
-        elif opcion == "8":
-            version_control.update()
+        elif opcion == "6":
+            target_user = input("¿Desde qué usuario deseas hacer update?: ").strip()
+            version_control.update(target_user)
 
-        elif opcion == "9":
+        elif opcion == "7":
             version_control.list_versions()
 
-        elif opcion == "10":
+        elif opcion == "8":
             versions = version_control.list_versions()
             if versions:
-                index = int(input("Seleccione la version a recuperar (numero): ")) - 1
-                if 0 <= index < len(versions):
-                    version_control.recover(versions[index], "", is_file=False)
+                index = input("Seleccione número de versión a recuperar: ").strip()
+                if index.isdigit() and 1 <= int(index) <= len(versions):
+                    version_control.recover(versions[int(index) - 1], None)
                 else:
-                    print("indice invalido.")
+                    print("Índice inválido.")
 
-        elif opcion == "11":
+        elif opcion == "9":
             versions = version_control.list_versions()
             if versions:
-                index = int(input("Seleccione la version a recuperar (numero): ")) - 1
-                if 0 <= index < len(versions):
-                    version = versions[index]
+                index = input("Seleccione número de versión: ").strip()
+                if index.isdigit() and 1 <= int(index) <= len(versions):
+                    version = versions[int(index) - 1]
                     archivos = version_control.list_files_in_version(version)
                     if not archivos:
-                        print("No hay archivos en esta version.")
+                        print("No hay archivos en esta versión.")
                         continue
-                    print("\nArchivos disponibles en esa version:")
+                    print("\nArchivos disponibles en esa versión:")
                     for i, archivo in enumerate(archivos):
                         print(f"{i + 1}. {archivo}")
-                    try:
-                        archivo_index = int(input("Seleccione el archivo a recuperar (numero): ")) - 1
-                        if 0 <= archivo_index < len(archivos):
-                            version_control.recover(version, archivos[archivo_index], is_file=True)
-                        else:
-                            print("indice invalido.")
-                    except ValueError:
-                        print("Entrada invalida.")
+                    archivo_index = input("Seleccione archivo (número): ").strip()
+                    if archivo_index.isdigit() and 1 <= int(archivo_index) <= len(archivos):
+                        version_control.recover(version, archivos[int(archivo_index) - 1], is_file=True)
+                    else:
+                        print("Índice de archivo inválido.")
                 else:
-                    print("indice invalido.")
+                    print("Índice de versión inválido.")
 
-        elif opcion == "12":
-            project_manager.crear_rama()
-            
-        elif opcion == "13":
+        elif opcion == "10":
             ctx = context_manager.get_context()
-            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
-            
             if not permissions.has_write_permission(current_user, target_user):
-                print(f"No tienes permiso de escritura sobre el proyecto de {target_user}.")
+                print("No tienes permiso de escritura.")
                 continue
             filename = input("Nombre del archivo: ")
             content = input("Contenido inicial: ")
             file_ops.create_file(ctx["path"], filename, content)
 
-        elif opcion == "14":
+        elif opcion == "11":
             ctx = context_manager.get_context()
-            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
-            
             if not permissions.has_read_permission(current_user, target_user):
-                print(f"No tienes permiso de lectura sobre el proyecto de {target_user}.")
+                print("No tienes permiso de lectura.")
                 continue
             filename = input("Archivo a leer: ")
             content = file_ops.read_file(ctx["path"], filename)
-            
             if content:
-                print("\n--- Contenido ---")
+                print("\n--- Contenido del archivo ---\n")
                 print(content)
 
-
-        elif opcion == "15":
+        elif opcion == "12":
             ctx = context_manager.get_context()
-            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
-            
             if not permissions.has_write_permission(current_user, target_user):
-                print(f"No tienes permiso de escritura sobre el proyecto de {target_user}.")
+                print("No tienes permiso de escritura.")
                 continue
             filename = input("Archivo a editar: ")
             content = input("Nuevo contenido: ")
             file_ops.update_file(ctx["path"], filename, content)
 
-        elif opcion == "16":
+        elif opcion == "13":
             ctx = context_manager.get_context()
-            
             if not ctx:
                 print("No hay contexto seleccionado.")
                 continue
             current_user = ctx["usuario_actual"]
             target_user = ctx["usuario_proyecto"]
-            
             if not permissions.has_write_permission(current_user, target_user):
-                print(f"No tienes permiso de escritura para eliminar archivos en el proyecto de {target_user}.")
+                print("No tienes permiso de escritura para eliminar archivos.")
                 continue
             filename = input("Archivo a eliminar: ")
             file_ops.delete_file(ctx["path"], filename)
 
-        elif opcion == "17":
-            logging.info("Aplicacion finalizada por el usuario.")
+        elif opcion == "14":
+            logging.info("Aplicación finalizada.")
             break
 
         else:
-            print("Opcion invalida.")
-            logging.warning(f"Opcion invalida seleccionada: {opcion}")
+            print("Opción inválida.")
 
 if __name__ == "__main__":
     main()
