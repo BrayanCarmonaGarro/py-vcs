@@ -22,9 +22,9 @@ def main():
         print("1. Crear usuario")
         print("2. Listar usuarios")
         print("3. Asignar permisos")
-        print("4. Cambiar de usuario (contexto)")
+        print("4. Cambiar de contexto (Usuario actual y repositorio)")
         print("5. Commit")
-        print("6. Update desde otro usuario")
+        print("6. Update")
         print("7. Listar versiones")
         print("8. Recuperar versión completa")
         print("9. Recuperar archivo específico")
@@ -53,7 +53,7 @@ def main():
 
         elif opcion == "4":
             user_manager.list_users()
-            usuario_actual = input("¿Quién eres tú (usuario actual)? ").strip()
+            usuario_actual = input("¿Con qué usuario deseas ingresar? ").strip()
             usuario_destino = input("¿A qué usuario deseas acceder (dueño de carpeta)?: ").strip()
 
             if usuario_actual not in user_manager.load_users() or usuario_destino not in user_manager.load_users():

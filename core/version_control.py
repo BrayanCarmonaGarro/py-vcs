@@ -19,9 +19,8 @@ class VersionControl:
 
         usuario_actual = ctx["usuario_actual"]
         usuario_destino = ctx["usuario_destino"]
-        temp_path = ctx["path"]  # Esta es la carpeta temporal actual del contexto
+        temp_path = ctx["path"]  
 
-        # El commit se realiza solo sobre el dueño real del repositorio (usuario_destino)
         perm_path = os.path.join(self.base_repo, usuario_destino, "permanente")
         version_path = os.path.join(self.base_repo, usuario_destino, "versiones")
 
@@ -87,35 +86,65 @@ class VersionControl:
         print(f"Update realizado desde '{perm_path}' hacia '{temp_dest}'.")
 
     def list_versions(self):
-        user = self.ctx.get_user()
-        if not user:
+        ctx = self.ctx.get_context()
+        if not ctx:
             print("No hay contexto activo.")
             return []
 
-        version_dir = os.path.join(self.base_repo, user, "versiones")
+        usuario_destino = ctx["usuario_destino"]
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones")
+
         if not os.path.exists(version_dir):
             print("No hay versiones.")
             return []
 
         versions = sorted(os.listdir(version_dir))
+        if not versions:
+            print("No hay versiones registradas.")
+            return []
+
+        print("\n--- Versiones disponibles ---")
         for i, v in enumerate(versions, 1):
             print(f"{i}. {v}")
         return versions
+    
+    def list_files_in_version(self, version_name):
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
+            return []
 
-    def recover(self, version_name, file_name=None):
-        user = self.ctx.get_user()
-        if not user:
+        usuario_destino = ctx["usuario_destino"]
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones", version_name)
+
+        if not os.path.exists(version_dir):
+            print("La versión no existe.")
+            return []
+
+        files = []
+        for root, _, filenames in os.walk(version_dir):
+            for f in filenames:
+                rel_path = os.path.relpath(os.path.join(root, f), version_dir)
+                files.append(rel_path)
+
+        return files
+
+
+    def recover(self, version_name, file_name=None, is_file=False):
+        ctx = self.ctx.get_context()
+        if not ctx:
             print("No hay contexto activo.")
             return
 
-        version_dir = os.path.join(self.base_repo, user, "versiones", version_name)
+        usuario_destino = ctx["usuario_destino"]
+        temp_path = ctx["path"] 
+
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones", version_name)
         if not os.path.exists(version_dir):
             print("Versión no encontrada.")
             return
 
-        temp_path = os.path.join(self.base_repo, user, "temporal")
-
-        if file_name:
+        if is_file and file_name:
             source = os.path.join(version_dir, file_name)
             dest = os.path.join(temp_path, file_name)
             if not os.path.exists(source):
