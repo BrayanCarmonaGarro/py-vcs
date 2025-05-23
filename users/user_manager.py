@@ -121,7 +121,6 @@ class UserManager:
             return True
         return users.get(target_user, {}).get("permisos", {}).get(current_user) in ("read", "write")
 
-
     def has_any_permission(self, current_user, target_user):
         users = self.load_users()
         if current_user == target_user:

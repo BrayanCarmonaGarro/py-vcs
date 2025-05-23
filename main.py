@@ -79,11 +79,7 @@ def main():
             context_manager.set_context(usuario_actual, usuario_destino)
 
         elif opcion == "6":
-            version_control.commit()
-
-        elif opcion == "7":
-            target_user = input("¿Desde qué usuario deseas hacer update?: ").strip()
-            version_control.update(target_user)
+            version_control.update()
 
         elif opcion == "8":
             version_control.list_versions()
