@@ -22,20 +22,22 @@ def main():
         print("1. Crear usuario")
         print("2. Listar usuarios")
         print("3. Asignar permisos")
-        print("4. Cambiar de usuario (contexto)")
-        print("5. Commit")
-        print("6. Update desde otro usuario")
-        print("7. Listar versiones")
-        print("8. Recuperar versión completa")
-        print("9. Recuperar archivo específico")
-        print("10. Crear archivo")
-        print("11. Listar archivos")
-        print("12. Ver archivo")
-        print("13. Editar archivo")
-        print("14. Eliminar archivo")
-        print("15. Salir")
+        print("4. Quitar permiso")
+        print("5. Cambiar de usuario (contexto)")
+        print("6. Commit")
+        print("7. Update desde otro usuario")
+        print("8. Listar versiones")
+        print("9. Recuperar versión completa")
+        print("10. Recuperar archivo específico")
+        print("11. Crear archivo")
+        print("12. Listar archivos")
+        print("13. Ver archivo")
+        print("14. Editar archivo")
+        print("15. Eliminar archivo")
+        print("16. Salir")
 
         opcion = input("Seleccione una opción: ").strip()
+        os.system('cls' if os.name == 'nt' else 'clear')
         logging.info(f"Opción seleccionada: {opcion}")
 
         if opcion == "1":
@@ -52,6 +54,12 @@ def main():
             user_manager.assign_permission(from_user, to_user, permiso)
 
         elif opcion == "4":
+            from_user = input("¿De quién es el repositorio?: ").strip()
+            to_user = input("¿A qué usuario deseas quitarle el permiso?: ").strip()
+            permiso = input("¿Qué permiso deseas quitar (read/write)?: ").strip().lower()
+            user_manager.remove_permission(from_user, to_user, permiso)
+
+        elif opcion == "5":
             user_manager.list_users()
             usuario_actual = input("¿Quién eres tú (usuario actual)? ").strip()
             usuario_destino = input("¿A qué usuario deseas acceder (dueño de carpeta)?: ").strip()
@@ -70,17 +78,17 @@ def main():
 
             context_manager.set_context(usuario_actual, usuario_destino)
 
-        elif opcion == "5":
+        elif opcion == "6":
             version_control.commit()
 
-        elif opcion == "6":
+        elif opcion == "7":
             target_user = input("¿Desde qué usuario deseas hacer update?: ").strip()
             version_control.update(target_user)
 
-        elif opcion == "7":
+        elif opcion == "8":
             version_control.list_versions()
 
-        elif opcion == "8":
+        elif opcion == "9":
             versions = version_control.list_versions()
             if versions:
                 index = input("Seleccione número de versión a recuperar: ").strip()
@@ -89,7 +97,7 @@ def main():
                 else:
                     print("Índice inválido.")
 
-        elif opcion == "9":
+        elif opcion == "10":
             versions = version_control.list_versions()
             if versions:
                 index = input("Seleccione número de versión: ").strip()
@@ -110,7 +118,7 @@ def main():
                 else:
                     print("Índice de versión inválido.")
 
-        elif opcion == "10":
+        elif opcion == "11":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -123,7 +131,7 @@ def main():
             filename = input("Nombre del archivo: ")
             file_ops.create_file(ctx["path"], filename)
 
-        elif opcion == "11":
+        elif opcion == "12":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -135,7 +143,7 @@ def main():
                 continue
             file_ops.list_files(ctx["path"])
 
-        elif opcion == "12":
+        elif opcion == "13":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -145,13 +153,14 @@ def main():
             if not user_manager.has_read_permission(current_user, target_user):
                 print("No tienes permiso de lectura.")
                 continue
+            file_ops.list_files(ctx["path"])
             filename = input("Archivo a leer: ")
             content = file_ops.read_file(ctx["path"], filename)
             if content:
                 print("\n--- Contenido del archivo ---\n")
                 print(content)
 
-        elif opcion == "13":
+        elif opcion == "14":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -161,11 +170,12 @@ def main():
             if not user_manager.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura.")
                 continue
+            file_ops.list_files(ctx["path"])
             filename = input("Archivo a editar: ")
             content = input("Nuevo contenido: ")
             file_ops.update_file(ctx["path"], filename, content)
 
-        elif opcion == "14":
+        elif opcion == "15":
             ctx = context_manager.get_context()
             if not ctx:
                 print("No hay contexto seleccionado.")
@@ -178,7 +188,7 @@ def main():
             filename = input("Archivo a eliminar: ")
             file_ops.delete_file(ctx["path"], filename)
 
-        elif opcion == "15":
+        elif opcion == "16":
             logging.info("Aplicación finalizada.")
             break
 

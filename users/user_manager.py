@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import shutil
 
 DATA_FILE = "data/users.json"
 REPO_ROOT = "repo_root"
@@ -71,6 +72,42 @@ class UserManager:
         os.makedirs(temp_folder, exist_ok=True)
 
         print(f"Permiso '{permiso}' otorgado de {from_user} a {to_user}.")
+
+    def remove_permission(self, from_user, to_user, permiso):
+        users = self.load_users()
+
+        # Validaciones básicas
+        if from_user not in users:
+            print(f"El usuario '{from_user}' no existe.")
+            return
+        if to_user not in users:
+            print(f"El usuario '{to_user}' no existe.")
+            return
+        if permiso not in ("read", "write"):
+            print("Permiso inválido. Use 'read' o 'write'.")
+            return
+
+        current_perm = users[from_user]["permisos"].get(to_user)
+        if not current_perm:
+            print(f"{to_user} no tiene permisos sobre el repositorio de {from_user}.")
+            return
+
+        # Si tiene el permiso que se quiere quitar
+        if current_perm == permiso:
+            del users[from_user]["permisos"][to_user]
+            self.save_users(users)
+            print(f"Permiso '{permiso}' eliminado correctamente de {to_user} sobre {from_user}.")
+
+            # Eliminar carpeta temporal si ya no tiene permisos
+            temp_path = os.path.join("repo_root", from_user, f"temp_{to_user}")
+            if os.path.exists(temp_path):
+                try:
+                    shutil.rmtree(temp_path)
+                    print(f"Carpeta temporal '{temp_path}' eliminada.")
+                except Exception as e:
+                    print(f"No se pudo eliminar la carpeta: {e}")
+        else:
+            print(f"{to_user} tiene permiso '{current_perm}', no coincide con '{permiso}' indicado.")
 
     def has_write_permission(self, current_user, target_user):
         users = self.load_users()
