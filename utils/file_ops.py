@@ -1,7 +1,7 @@
 import os
 
 def get_temp_path(base_path, filename):
-    return os.path.join(base_path, "temporal", filename)
+    return os.path.join(base_path, filename)
 
 def create_file(base_path, filename, content=""):
     path = get_temp_path(base_path, filename)

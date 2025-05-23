@@ -3,6 +3,7 @@ from users.user_manager import UserManager
 from core.context_manager import ContextManager
 from core.version_control import VersionControl
 from utils import file_ops
+from users import permissions
 import os
 
 # Configuración de logging
