@@ -25,7 +25,7 @@ def main():
         print("4. Quitar permiso")
         print("5. Cambiar de usuario (contexto)")
         print("6. Commit")
-        print("7. Update desde otro usuario")
+        print("7. Update")
         print("8. Listar versiones")
         print("9. Recuperar versión completa")
         print("10. Recuperar archivo específico")
@@ -77,8 +77,11 @@ def main():
                 continue
 
             context_manager.set_context(usuario_actual, usuario_destino)
-
+            
         elif opcion == "6":
+            version_control.commit()
+
+        elif opcion == "7":
             version_control.update()
 
         elif opcion == "8":
