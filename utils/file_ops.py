@@ -35,3 +35,16 @@ def delete_file(base_path, filename):
         print(f"Archivo '{filename}' eliminado.")
     else:
         print("Archivo no encontrado.")
+def list_files(base_path):
+    if not os.path.exists(base_path):
+        print("La carpeta de trabajo no existe.")
+        return []
+
+    archivos = [f for f in os.listdir(base_path) if os.path.isfile(os.path.join(base_path, f))]
+    if not archivos:
+        print("No hay archivos en esta carpeta.")
+    else:
+        print("Archivos disponibles:")
+        for i, archivo in enumerate(archivos, 1):
+            print(f"{i}. {archivo}")
+    return archivos
