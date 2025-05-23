@@ -16,32 +16,38 @@ class ContextManager:
             with open(CONTEXT_FILE, "r") as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            logging.error("El archivo de contexto esta dañado. Se reiniciara.")
+            logging.error("El archivo de contexto está dañado. Se reiniciará.")
             return {}
 
     def save_context(self, context):
         with open(CONTEXT_FILE, "w") as f:
             json.dump(context, f, indent=2)
 
-    def set_context(self, username, project, branch):
+    def set_context(self, usuario_actual, usuario_destino):
+        if not usuario_actual or not usuario_destino:
+            print("Faltan datos de contexto.")
+            return
+
+        if usuario_actual == usuario_destino:
+            path = os.path.join("repo_root", usuario_actual, "temporal")
+        else:
+            path = os.path.join("repo_root", usuario_destino, f"temp_{usuario_actual}")
+
         context = {
-            "usuario": username,
-            "proyecto": project,
-            "rama": branch
+            "usuario_actual": usuario_actual,
+            "usuario_destino": usuario_destino,
+            "path": path
         }
+
         self.save_context(context)
-        print(f"Contexto actualizado: Usuario: {username}, Proyecto: {project}, Rama: {branch}")
         logging.info(f"Contexto cambiado a: {context}")
 
     def get_context(self):
         ctx = self.load_context()
-        return ctx.get("usuario"), ctx.get("proyecto"), ctx.get("rama")
+        if not all(k in ctx for k in ("usuario_actual", "usuario_destino", "path")):
+            return None
+        return ctx
 
     def get_user(self):
-        return self.load_context().get("usuario")
-
-    def get_project(self):
-        return self.load_context().get("proyecto")
-
-    def get_branch(self):
-        return self.load_context().get("rama")
+        ctx = self.get_context()
+        return ctx["usuario_actual"] if ctx else None

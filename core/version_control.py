@@ -3,32 +3,40 @@ import shutil
 import datetime
 import logging
 from core.context_manager import ContextManager
+from users.user_manager import UserManager
 
 class VersionControl:
     def __init__(self):
         self.ctx = ContextManager()
+        self.um = UserManager()
         self.base_repo = "repo_root"
 
     def commit(self):
-        user = self.ctx.get_user()
-        project = self.ctx.get_project()
-        branch = self.ctx.get_branch()
-
-        if not user or not project or not branch:
-            print("No hay contexto activo. Seleccione usuario, proyecto y rama.")
-            logging.warning("Intento de commit sin contexto valido.")
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
             return
 
-        user_path = os.path.join(self.base_repo, user)
-        project_path = os.path.join(user_path, project)
-        branch_path = os.path.join(project_path, "branches", branch)
-        temp_path = os.path.join(branch_path, "temporal")
-        perm_path = os.path.join(branch_path, "permanente")
-        version_path = os.path.join(branch_path, "versiones")
+        usuario_actual = ctx["usuario_actual"]
+        usuario_destino = ctx["usuario_destino"]
+        temp_path = ctx["path"]
+
+        users = self.um.load_users()
+        if usuario_destino not in users:
+            print(f"El usuario destino '{usuario_destino}' no existe.")
+            return
+
+        permisos = users[usuario_destino].get("permisos", {})
+        permiso = permisos.get(usuario_actual)
+        if usuario_actual != usuario_destino and permiso != "write":
+            print(f"No tienes permisos de escritura sobre el usuario '{usuario_destino}'.")
+            return
+
+        perm_path = os.path.join(self.base_repo, usuario_destino, "permanente")
+        version_path = os.path.join(self.base_repo, usuario_destino, "versiones")
 
         if not os.path.exists(temp_path):
-            print(f"No se encontro la carpeta temporal en: {temp_path}")
-            logging.error(f"Commit fallido: carpeta temporal no existe en {temp_path}")
+            print(f"No se encontró la carpeta temporal de trabajo: {temp_path}")
             return
 
         os.makedirs(perm_path, exist_ok=True)
@@ -36,145 +44,126 @@ class VersionControl:
 
         if os.path.exists(perm_path):
             shutil.rmtree(perm_path)
-        
         shutil.copytree(temp_path, perm_path)
 
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         version_dir = os.path.join(version_path, f"v_{timestamp}")
         shutil.copytree(perm_path, version_dir)
 
-        logging.info(f"Commit realizado por {user} en {project}/{branch}. Version: v_{timestamp}")
-        print(f"Commit realizado con éxito. Version guardada: v_{timestamp}")
+        print(f"Commit realizado sobre {usuario_destino}. Versión guardada: v_{timestamp}")
+
 
     def update(self):
-        user = self.ctx.get_user()
-        project = self.ctx.get_project()
-        branch = self.ctx.get_branch()
-
-        if not user or not project or not branch:
-            print("No hay contexto activo. Seleccione usuario, proyecto y rama.")
-            logging.warning("Intento de update sin contexto valido.")
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
             return
-        
-        user_path = os.path.join(self.base_repo, user)
-        project_path = os.path.join(user_path, project)
-        branch_path = os.path.join(project_path, "branches", branch)
-        temp_path = os.path.join(branch_path, "temporal")
-        perm_path = os.path.join(branch_path, "permanente")
+
+        current_user = ctx["usuario_actual"]
+        target_user = ctx["usuario_destino"]
+
+        if not current_user or not target_user:
+            print("Falta información del contexto.")
+            return
+
+        # Verificar permisos
+        users = self.um.load_users()
+        if target_user not in users:
+            print(f"El usuario destino '{target_user}' no existe.")
+            return
+
+        permisos = users[target_user].get("permisos", {})
+        permiso = permisos.get(current_user)
+        if current_user != target_user and permiso not in ["read", "write"]:
+            print(f"No tienes permisos sobre el usuario '{target_user}'.")
+            return
+
+        perm_path = os.path.join(self.base_repo, target_user, "permanente")
+        temp_dest = os.path.join(
+            self.base_repo,
+            target_user,
+            f"temp_{current_user}" if current_user != target_user else "temporal"
+        )
 
         if not os.path.exists(perm_path):
-            print(f"No se encontro la carpeta permanente en: {perm_path}")
-            logging.error(f"Update fallido: carpeta permanente no existe en {perm_path}")
+            print("No hay carpeta permanente para copiar.")
             return
 
-        os.makedirs(temp_path, exist_ok=True)
+        if os.path.exists(temp_dest):
+            shutil.rmtree(temp_dest)
+        shutil.copytree(perm_path, temp_dest)
 
-        # Borrar los archivos en la carpeta temporal antes de hacer el update
-        if os.path.exists(temp_path):
-            shutil.rmtree(temp_path)
-
-        # Copiar los archivos desde permanente a temporal
-        shutil.copytree(perm_path, temp_path)
-
-        logging.info(f"Update realizado por {user} en {project}/{branch}.")
-        print(f"Update realizado con éxito. Los archivos de la carpeta permanente han sido copiados a temporal.")
-
+        print(f"Update realizado desde '{perm_path}' hacia '{temp_dest}'.")
 
     def list_versions(self):
-        user = self.ctx.get_user()
-        project = self.ctx.get_project()
-        branch = self.ctx.get_branch()
-
-        if not user or not project or not branch:
-            print("No hay contexto activo. Seleccione usuario, proyecto y rama.")
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
             return []
 
-        version_path = os.path.join(self.base_repo, user, project, "branches", branch, "versiones")
+        usuario_destino = ctx["usuario_destino"]
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones")
 
-        if not os.path.exists(version_path):
-            print("No hay versiones disponibles.")
+        if not os.path.exists(version_dir):
+            print("No hay versiones.")
             return []
 
-        versions = sorted(os.listdir(version_path))
+        versions = sorted(os.listdir(version_dir))
         if not versions:
-            print("No hay versiones disponibles.")
+            print("No hay versiones registradas.")
             return []
 
-        print("Versiones disponibles:")
-        for i, version in enumerate(versions, 1):
-            print(f"{i}. {version}")
+        print("\n--- Versiones disponibles ---")
+        for i, v in enumerate(versions, 1):
+            print(f"{i}. {v}")
         return versions
-
-    def recover(self, version, path_relativa="", is_file=True):
-        user = self.ctx.get_user()
-        project = self.ctx.get_project()
-        branch = self.ctx.get_branch()
-
-        if not user or not project or not branch:
+    
+    def list_files_in_version(self, version_name):
+        ctx = self.ctx.get_context()
+        if not ctx:
             print("No hay contexto activo.")
-            logging.warning("Recuperacion fallida: sin contexto valido.")
-            return
+            return []
 
-        base = os.path.join(self.base_repo, user, project, "branches", branch)
-        version_dir = os.path.join(base, "versiones", version)
-        temp_path = os.path.join(base, "temporal")
+        usuario_destino = ctx["usuario_destino"]
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones", version_name)
 
         if not os.path.exists(version_dir):
-            print("La version seleccionada no existe.")
-            logging.error(f"Recuperacion fallida: version {version} no encontrada.")
+            print("La versión no existe.")
+            return []
+
+        files = []
+        for root, _, filenames in os.walk(version_dir):
+            for f in filenames:
+                rel_path = os.path.relpath(os.path.join(root, f), version_dir)
+                files.append(rel_path)
+
+        return files
+
+
+    def recover(self, version_name, file_name=None, is_file=False):
+        ctx = self.ctx.get_context()
+        if not ctx:
+            print("No hay contexto activo.")
             return
 
-        if is_file:
-            src_file = os.path.join(version_dir, path_relativa)
-            dst_file = os.path.join(temp_path, path_relativa)
+        usuario_destino = ctx["usuario_destino"]
+        temp_path = ctx["path"] 
 
-            if not os.path.exists(src_file):
-                print("El archivo no existe en esa version.")
-                logging.error(f"Recuperacion fallida: archivo {src_file} no existe.")
+        version_dir = os.path.join(self.base_repo, usuario_destino, "versiones", version_name)
+        if not os.path.exists(version_dir):
+            print("Versión no encontrada.")
+            return
+
+        if is_file and file_name:
+            source = os.path.join(version_dir, file_name)
+            dest = os.path.join(temp_path, file_name)
+            if not os.path.exists(source):
+                print("Archivo no existe en la versión.")
                 return
-
-            if os.path.exists(dst_file):
-                confirm = input(f"El archivo ya existe en temporal. ¿Sobrescribir '{path_relativa}'? (s/n): ").lower()
-                if confirm != 's':
-                    print("Recuperacion cancelada.")
-                    return
-
-            os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-            shutil.copy2(src_file, dst_file)
-            print("Archivo recuperado con éxito.")
-            logging.info(f"Archivo {path_relativa} recuperado de version {version} por {user}.")
-        
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copy2(source, dest)
+            print(f"Archivo '{file_name}' recuperado en temporal.")
         else:
-            if os.path.exists(temp_path):
-                confirm = input("La carpeta temporal sera reemplazada por la version seleccionada. ¿Continuar? (s/n): ").lower()
-                if confirm != 's':
-                    print("Recuperacion cancelada.")
-                    return
-                shutil.rmtree(temp_path)
-
+            shutil.rmtree(temp_path, ignore_errors=True)
             shutil.copytree(version_dir, temp_path)
-            print("Carpeta completa recuperada con éxito.")
-            logging.info(f"Carpeta recuperada de version {version} por {user}.")
-
-    def list_files_in_version(self, version):
-        user = self.ctx.get_user()
-        project = self.ctx.get_project()
-        branch = self.ctx.get_branch()
-
-        if not user or not project or not branch:
-            print("No hay contexto activo.")
-            return []
-
-        version_dir = os.path.join(self.base_repo, user, project, "branches", branch, "versiones", version)
-        if not os.path.exists(version_dir):
-            print("La version no existe.")
-            return []
-
-        archivos = []
-        for root, _, files in os.walk(version_dir):
-            for f in files:
-                full_path = os.path.join(root, f)
-                rel_path = os.path.relpath(full_path, version_dir)
-                archivos.append(rel_path)
-        return archivos
-
+            print(f"Versión '{version_name}' restaurada completamente en temporal.")
