@@ -184,6 +184,7 @@ def main():
             if not user_manager.has_write_permission(current_user, target_user):
                 print("No tienes permiso de escritura para eliminar archivos.")
                 continue
+            file_ops.list_files(ctx["path"])
             filename = input("Archivo a eliminar: ")
             file_ops.delete_file(ctx["path"], filename)
 
